@@ -10,6 +10,7 @@ from chainlit.input_widget import Select
 from langchain_core.messages import HumanMessage
 from langgraph.graph.state import CompiledStateGraph
 
+from tutor.asr import transcribe
 from tutor.callbacks import UsageCallbackHandler
 from tutor.config import get_settings
 from tutor.graph import open_graph
@@ -65,15 +66,99 @@ async def update_level(settings: dict[str, Any]) -> None:
 
 @cl.on_message
 async def handle(message: cl.Message) -> None:
+    # Typing wins over a pending dictation, so no draft can be sent by surprise.
+    await _drop_draft()
+
     if message.content.strip() == END_COMMAND:
         await _end_session()
         return
 
-    result = await _invoke({"messages": [HumanMessage(message.content)]})
+    await _run_turn(message.content)
+
+
+async def _run_turn(text: str) -> None:
+    result = await _invoke({"messages": [HumanMessage(text)]})
     corrections = cast(list[Correction], result.get("shown_corrections", []))
     await cl.Message(
         content=result["reply"], elements=_correction_elements(corrections)
     ).send()
+
+
+# --- Voice dictation -------------------------------------------------------
+#
+# Chainlit has no way to prefill the composer, so a recording becomes a draft
+# message with Send / Discard actions: the learner reads back what was
+# recognised before anything is sent to the tutor.
+
+
+@cl.on_audio_start
+async def audio_start() -> bool:
+    cl.user_session.set("audio_chunks", [])
+    return True
+
+
+@cl.on_audio_chunk
+async def audio_chunk(chunk: cl.InputAudioChunk) -> None:
+    chunks = cast(list[bytes], cl.user_session.get("audio_chunks") or [])
+    chunks.append(chunk.data)
+    cl.user_session.set("audio_chunks", chunks)
+
+
+@cl.on_audio_end
+async def audio_end() -> None:
+    chunks = cast(list[bytes], cl.user_session.get("audio_chunks") or [])
+    cl.user_session.set("audio_chunks", [])
+
+    async with cl.Step(name="Transcribing", type="tool") as step:
+        try:
+            text = await transcribe(b"".join(chunks))
+        except Exception as error:  # surfaced to the learner, never swallowed
+            logger.exception("transcription failed")
+            step.output = str(error)
+            await cl.Message(
+                content="I couldn't transcribe that recording. Try again, or type it."
+            ).send()
+            return
+        step.output = text or "(nothing recognised)"
+
+    if not text:
+        await cl.Message(
+            content="I didn't catch anything — try recording again."
+        ).send()
+        return
+
+    await _drop_draft()
+    draft = cl.Message(
+        content=f"🎙 **Draft:** {text}\n\n_Send it, or type a corrected version._",
+        actions=[
+            cl.Action(name="send_draft", payload={"text": text}, label="Send"),
+            cl.Action(name="discard_draft", payload={}, label="Discard"),
+        ],
+    )
+    await draft.send()
+    cl.user_session.set("draft_message_id", draft.id)
+
+
+@cl.action_callback("send_draft")
+async def send_draft(action: cl.Action) -> None:
+    text = str(action.payload["text"])
+    await _drop_draft()
+    # Echo it as the learner's own turn so the transcript reads naturally.
+    await cl.Message(content=text, type="user_message").send()
+    await _run_turn(text)
+
+
+@cl.action_callback("discard_draft")
+async def discard_draft(action: cl.Action) -> None:
+    await _drop_draft()
+
+
+async def _drop_draft() -> None:
+    """Remove the pending draft message, if any."""
+    message_id = cl.user_session.get("draft_message_id")
+    if message_id:
+        await cl.Message(content="", id=str(message_id)).remove()
+        cl.user_session.set("draft_message_id", None)
 
 
 async def _end_session() -> None:

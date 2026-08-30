@@ -2,7 +2,8 @@
 *.db
 *.db-shm
 *.db-wal
-.chainlit/
+.chainlit/*
+!.chainlit/config.toml
 .files/
 .venv/
 __pycache__/
