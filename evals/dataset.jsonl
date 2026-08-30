@@ -1,0 +1,35 @@
+{"id": "a2-001", "level": "A2", "text": "Yesterday I go to the cinema with my sister.", "correct": false, "expected": [{"error_type": "tense"}]}
+{"id": "a2-002", "level": "A2", "text": "She have two brothers and one cat.", "correct": false, "expected": [{"error_type": "agreement"}]}
+{"id": "a2-003", "level": "A2", "text": "I am living in Berlin since three years.", "correct": false, "expected": [{"error_type": "tense"}]}
+{"id": "a2-004", "level": "A2", "text": "My father he works in a bank.", "correct": false, "expected": [{"error_type": "grammar"}]}
+{"id": "a2-005", "level": "A2", "text": "I like very much this song.", "correct": false, "expected": [{"error_type": "word_order"}]}
+{"id": "a2-006", "level": "A2", "text": "We didn't went to the party.", "correct": false, "expected": [{"error_type": "tense"}]}
+{"id": "a2-007", "level": "A2", "text": "I have a dog. His name is Rex.", "correct": true, "expected": []}
+{"id": "a2-008", "level": "A2", "text": "On Sunday I usually visit my grandmother.", "correct": true, "expected": []}
+{"id": "a2-009", "level": "A2", "text": "It was raining, so we stayed at home.", "correct": true, "expected": []}
+{"id": "a2-010", "level": "A2", "text": "I go to the school every day by bus.", "correct": true, "expected": []}
+{"id": "b1-001", "level": "B1", "text": "I have seen him yesterday at the station.", "correct": false, "expected": [{"error_type": "tense"}]}
+{"id": "b1-002", "level": "B1", "text": "She is depending of her parents for money.", "correct": false, "expected": [{"error_type": "preposition"}]}
+{"id": "b1-003", "level": "B1", "text": "The informations you sent me were useful.", "correct": false, "expected": [{"error_type": "grammar"}]}
+{"id": "b1-004", "level": "B1", "text": "I am interested to learn more about it.", "correct": false, "expected": [{"error_type": "preposition"}]}
+{"id": "b1-005", "level": "B1", "text": "If I would have time, I will call you.", "correct": false, "expected": [{"error_type": "tense"}]}
+{"id": "b1-006", "level": "B1", "text": "He explained me the whole situation.", "correct": false, "expected": [{"error_type": "grammar"}]}
+{"id": "b1-007", "level": "B1", "text": "We discussed about the new project for an hour.", "correct": false, "expected": [{"error_type": "preposition"}]}
+{"id": "b1-008", "level": "B1", "text": "I am working here since 2019.", "correct": false, "expected": [{"error_type": "tense"}]}
+{"id": "b1-009", "level": "B1", "text": "There is too much people in this room.", "correct": false, "expected": [{"error_type": "agreement"}]}
+{"id": "b1-010", "level": "B1", "text": "I look forward to hearing from you soon.", "correct": true, "expected": []}
+{"id": "b1-011", "level": "B1", "text": "Although it was late, we decided to keep walking.", "correct": true, "expected": []}
+{"id": "b1-012", "level": "B1", "text": "I've been meaning to call you all week.", "correct": true, "expected": []}
+{"id": "b1-013", "level": "B1", "text": "She asked me whether I had finished the report.", "correct": true, "expected": []}
+{"id": "b1-014", "level": "B1", "text": "The film wasn't as good as I expected.", "correct": true, "expected": []}
+{"id": "b1-015", "level": "B1", "text": "We are living in this flat for two years now.", "correct": false, "expected": [{"error_type": "tense"}]}
+{"id": "c1-001", "level": "C1", "text": "I made a research about the topic last month.", "correct": false, "expected": [{"error_type": "vocabulary"}]}
+{"id": "c1-002", "level": "C1", "text": "The government have announced a new policy on the immigration.", "correct": false, "expected": [{"error_type": "article"}]}
+{"id": "c1-003", "level": "C1", "text": "He is used to work late on Fridays.", "correct": false, "expected": [{"error_type": "grammar"}]}
+{"id": "c1-004", "level": "C1", "text": "I was doing my homework when suddenly the lights went out.", "correct": true, "expected": []}
+{"id": "c1-005", "level": "C1", "text": "Had I known about the deadline, I would have started earlier.", "correct": true, "expected": []}
+{"id": "c1-006", "level": "C1", "text": "This approach raises the question of whether the trade-off is worth it.", "correct": true, "expected": []}
+{"id": "c1-007", "level": "C1", "text": "The team have been working on the prototype since January.", "correct": true, "expected": []}
+{"id": "c1-008", "level": "C1", "text": "I look forward to hear your thoughts on the proposal.", "correct": false, "expected": [{"error_type": "grammar"}]}
+{"id": "c1-009", "level": "C1", "text": "Despite of the delay, the launch went smoothly.", "correct": false, "expected": [{"error_type": "preposition"}]}
+{"id": "c1-010", "level": "C1", "text": "She suggested me to take a different route.", "correct": false, "expected": [{"error_type": "grammar"}]}
