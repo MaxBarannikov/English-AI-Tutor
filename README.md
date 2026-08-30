@@ -34,6 +34,33 @@ uv run chainlit run app.py
 Set your CEFR level in the chat settings — it changes both prompts, not just the
 wording. Send `/summary` to end the session and get the report.
 
+## Voice input
+
+Press the mic and speak. The recording is transcribed **locally** with
+faster-whisper — no API key, no per-minute cost, and the audio never leaves the
+machine — and comes back as a draft:
+
+> 🎙 **Draft:** I go to Rome yesterday with my sister
+> _Send it, or type a corrected version._ **[Send] [Discard]**
+
+Nothing reaches the tutor until you press **Send**, so you always see what was
+recognised first. Typing anything discards the draft, so a stale one can never
+be sent by surprise.
+
+Chainlit offers no way to prefill the message composer, which is why the draft
+is a message with buttons rather than editable text in the input box. To edit,
+type the corrected version — the draft steps aside.
+
+```bash
+make asr    # download the model up front; otherwise the first dictation waits for it
+```
+
+`TUTOR_ASR_MODEL` picks the size (`tiny` … `large-v3-turbo`, default `small`).
+On an M-series Mac, `small` transcribes ~4 s of speech in under two seconds and
+is accurate enough for learner speech; move up to `medium` if your learners have
+strong accents and you can spend the latency. `TUTOR_ASR_SAMPLE_RATE` must match
+`sample_rate` under `[features.audio]` in `.chainlit/config.toml`.
+
 ## Providers
 
 The provider is chosen with `TUTOR_PROVIDER`; `src/tutor/llm.py` is the only
@@ -123,6 +150,7 @@ run it directly.
 | `make check` | lint + types + tests + format check — what CI runs |
 | `make evals` | eval suite (calls a real model) |
 | `make graph` | regenerate `docs/graph.png` |
+| `make asr` | pre-download the speech-recognition model |
 | `make clean` | caches and the local session database |
 
 ## Layout
@@ -137,6 +165,7 @@ src/tutor/
     pricing.py     token prices
     callbacks.py   per-turn usage accounting
     config.py      pydantic-settings
+    asr.py         local speech recognition for voice input
     prompts/       prompts as .md, loaded at import
     nodes/         responder, analyzer, merge, summary
 ```
