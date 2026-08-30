@@ -8,7 +8,6 @@ START ─┬─> responder ─┐
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from pathlib import Path
 
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langgraph.graph import END, START, StateGraph
@@ -58,14 +57,3 @@ async def open_graph() -> AsyncIterator[CompiledTutorGraph]:
     db = get_settings().checkpoint_db
     async with AsyncSqliteSaver.from_conn_string(str(db)) as saver:
         yield build_graph().compile(checkpointer=saver)
-
-
-def _write_diagram(path: Path) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(build_graph().compile().get_graph().draw_mermaid_png())
-
-
-if __name__ == "__main__":
-    target = Path(__file__).resolve().parents[2] / "docs" / "graph.png"
-    _write_diagram(target)
-    print(f"wrote {target}")

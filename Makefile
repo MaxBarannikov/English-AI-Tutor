@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help install run test lint format typecheck check evals graph asr clean
+.PHONY: help install run test lint format typecheck check evals asr clean
 
 help:  ## Show this help
 	@grep -E '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk -F':.*?## ' '{printf "  %-10s %s\n", $$1, $$2}'
@@ -27,9 +27,6 @@ check: lint typecheck test  ## Everything CI would run
 
 evals:  ## Score the analyzer against the labelled dataset (calls a real model)
 	uv run python evals/run.py
-
-graph:  ## Regenerate docs/graph.png from the code
-	uv run python -m tutor.graph
 
 asr:  ## Download the speech-recognition model ahead of first use
 	uv run python -m tutor.asr

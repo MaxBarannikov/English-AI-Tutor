@@ -1,27 +1,101 @@
-# English AI Tutor
+# AI English Speaking Tutor
 
-A conversational agent that holds a natural dialogue in English while correcting
-the learner's mistakes — without letting the corrections take over the
-conversation.
+A conversational English tutor that lets you practise speaking naturally with an
+AI and get structured, CEFR-aware feedback on your mistakes — without letting the
+corrections take over the conversation.
+
+## Key features
+
+* 🎙️ **Local speech-to-text** — faster-whisper runs on your machine; no API key,
+  no per-minute cost, audio never leaves the laptop
+* 🤖 **Conversational agent built with LangGraph** — stateful graph, checkpointed
+  to SQLite, survives a process restart
+* 🔌 **LangChain as the model layer** — one interface over Claude, OpenAI and
+  local Ollama models, with `with_structured_output` returning validated Pydantic
+  corrections; switching provider is one env var
+* 🧠 **Parallel response & analysis** — `responder` and `analyzer` are two
+  independent LLM calls issued concurrently; neither is asked to do the other's job
+* 📊 **CEFR-aware corrections** — the learner's level is passed into both prompts
+  and changes behaviour: at A2 the analyzer ignores subtle article and aspect
+  errors, at C1 it flags them
+* 🎯 **Severity gating** — every `critical` correction is shown, at most one
+  `minor` per turn, `style` findings are held for the end-of-session report
+* 💬 **Chainlit UI** with an end-of-session summary (`/summary`)
+* 💰 **Cost visibility** — tokens and USD are reported under every reply
+* 📈 **Eval suite** with precision / recall / F0.5 per error type and a separate
+  false-positive rate on correct sentences
+
+## Architecture
+
+```mermaid
+flowchart TD
+    mic["🎙 Speech"] --> asr["faster-whisper<br/>local, on-device"]
+    asr --> draft["Draft<br/>Send · Discard"]
+    draft --> start(["START"])
+    typed["⌨️ Typed message"] --> start
+
+    start -->|route_turn| responder["responder<br/>temp 0.7 · CEFR-aware<br/>never mentions mistakes"]
+    start -->|route_turn| analyzer["analyzer<br/>temp 0 · structured output<br/>only the last message"]
+    start -.->|end_session| summary["summary<br/>session report"]
+
+    responder -->|reply| merge["merge<br/>severity gating in Python"]
+    analyzer -->|corrections| merge
+    merge --> out["Reply, then corrections"]
+    summary --> report["End-of-session report"]
+
+    classDef io fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
+    classDef node fill:#ecfdf5,stroke:#059669,color:#064e3b
+    classDef sink fill:#fff7ed,stroke:#ea580c,color:#7c2d12
+    class mic,typed,asr,draft io
+    class responder,analyzer,merge,summary node
+    class out,report sink
+```
 
 Two concerns run in parallel and never mix:
 
 - **responder** plays a conversation partner. It never mentions mistakes, keeps
-  vocabulary at the learner's CEFR level, and always ends with a question.
+  vocabulary at the learner's CEFR level, and always ends with a question so the
+  dialogue does not stall.
 - **analyzer** looks only at the learner's last message and returns structured
-  corrections. It never produces conversational text.
+  corrections via `with_structured_output`. It never produces conversational text.
 
-A merge node assembles the turn — reply first, corrections second — and applies
-**severity gating**: every `critical` correction is shown, at most one `minor`
-per turn, and `style` findings are held back for the end-of-session report.
-Over-correcting makes learners stop talking, so how much is surfaced is decided
-in Python, not asked of the model.
+They write to different state keys (`reply` and `corrections`), which is what
+makes running them concurrently safe — a shared key without a reducer would raise
+`InvalidUpdateError`.
 
-![Graph topology](docs/graph.png)
+The **merge** node assembles the turn — reply first, corrections second — and
+applies severity gating. Over-correcting makes learners stop talking, so *how
+much* is surfaced is decided in Python, not asked of the model.
 
-`responder` and `analyzer` are two independent LLM calls issued concurrently;
-`summary` is a separate entry point taken when the session ends, so no reply is
+**summary** is a separate branch taken when the session ends, so no reply is
 generated for a turn the learner never wrote.
+
+## Tech stack
+
+Every dependency earns its place; nothing is here to pad the list.
+
+| | | |
+|---|---|---|
+| **Orchestration** | LangGraph | Typed state, a conditional entry point, two concurrent branches, and a SQLite checkpointer that survives a restart |
+| **Model layer** | langchain-core | One `BaseChatModel` interface over three providers, `with_structured_output`, message types, per-turn usage callbacks |
+| **Providers** | langchain-anthropic · langchain-openai · langchain-ollama | Claude, GPT or a local model — chosen by env var, wired in one file |
+| **Speech** | faster-whisper | On-device transcription: no API key, no per-minute cost, audio never leaves the machine |
+| **Data** | Pydantic v2 · pydantic-settings | Every structure crossing a boundary is a validated model; config comes from `.env`, never from code |
+| **UI** | Chainlit | Chat surface with mic input, a CEFR level selector, and the cost line under each reply |
+| **Language** | Python 3.12 | `type` aliases, `TypedDict` state, modern unions — no `typing.List`, no `Optional`, no `Any` |
+| **Tooling** | uv · ruff · mypy strict · pytest | `make check` runs the lot; tests mock at the LLM boundary and never hit the network |
+
+Deliberately absent: no vector store, no RAG, no agent framework on top of the
+graph, and none of LangChain's legacy `LLMChain` / `initialize_agent` APIs. The
+problem does not need them.
+
+## Why this project?
+
+It is a portfolio project, built to show what separates a production-oriented LLM
+application from a chatbot wrapper: stateful graph workflows, parallel calls with
+reducer-safe state, structured outputs everywhere, deterministic business logic
+kept out of the prompt, measured quality, visible cost, and local speech
+processing.
 
 ## Quickstart
 
@@ -36,20 +110,19 @@ wording. Send `/summary` to end the session and get the report.
 
 ## Voice input
 
-Press the mic and speak. The recording is transcribed **locally** with
-faster-whisper — no API key, no per-minute cost, and the audio never leaves the
-machine — and comes back as a draft:
+Press the mic and speak. The recording is transcribed locally with faster-whisper
+and comes back as a draft:
 
 > 🎙 **Draft:** I go to Rome yesterday with my sister
 > _Send it, or type a corrected version._ **[Send] [Discard]**
 
 Nothing reaches the tutor until you press **Send**, so you always see what was
-recognised first. Typing anything discards the draft, so a stale one can never
-be sent by surprise.
+recognised first. Typing anything discards the draft, so a stale one can never be
+sent by surprise.
 
-Chainlit offers no way to prefill the message composer, which is why the draft
-is a message with buttons rather than editable text in the input box. To edit,
-type the corrected version — the draft steps aside.
+Chainlit offers no way to prefill the message composer, which is why the draft is
+a message with buttons rather than editable text in the input box. To edit, type
+the corrected version — the draft steps aside.
 
 ```bash
 make asr    # download the model up front; otherwise the first dictation waits for it
@@ -63,8 +136,8 @@ strong accents and you can spend the latency. `TUTOR_ASR_SAMPLE_RATE` must match
 
 ## Providers
 
-The provider is chosen with `TUTOR_PROVIDER`; `src/tutor/llm.py` is the only
-file that knows about any of them.
+The provider is chosen with `TUTOR_PROVIDER`; `src/tutor/llm.py` is the only file
+that knows about any of them.
 
 | `TUTOR_PROVIDER` | Models | Credentials |
 |---|---|---|
@@ -137,8 +210,8 @@ model changes; stale numbers are worse than none.
 
 ## Commands
 
-`make help` lists them; each target is a one-line `uv run …` if you prefer to
-run it directly.
+`make help` lists them; each target is a one-line `uv run …` if you prefer to run
+it directly.
 
 | | |
 |---|---|
@@ -149,7 +222,6 @@ run it directly.
 | `make typecheck` | mypy strict |
 | `make check` | lint + types + tests + format check — what CI runs |
 | `make evals` | eval suite (calls a real model) |
-| `make graph` | regenerate `docs/graph.png` |
 | `make asr` | pre-download the speech-recognition model |
 | `make clean` | caches and the local session database |
 
@@ -157,7 +229,7 @@ run it directly.
 
 ```
 src/tutor/
-    graph.py       StateGraph assembly, checkpointer, diagram
+    graph.py       StateGraph assembly, routing, checkpointer
     state.py       TutorState and its reducers
     models.py      Pydantic models — Correction, SessionSummary, …
     severity.py    the gating rule
@@ -166,6 +238,6 @@ src/tutor/
     callbacks.py   per-turn usage accounting
     config.py      pydantic-settings
     asr.py         local speech recognition for voice input
-    prompts/       prompts as .md, loaded at import
+    prompts/       responder.md, analyzer.md, summary.md — loaded at import
     nodes/         responder, analyzer, merge, summary
 ```
