@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help install run test lint format typecheck check evals graph clean
+.PHONY: help install run test lint format typecheck check evals graph asr clean
 
 help:  ## Show this help
 	@grep -E '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk -F':.*?## ' '{printf "  %-10s %s\n", $$1, $$2}'
@@ -30,6 +30,9 @@ evals:  ## Score the analyzer against the labelled dataset (calls a real model)
 
 graph:  ## Regenerate docs/graph.png from the code
 	uv run python -m tutor.graph
+
+asr:  ## Download the speech-recognition model ahead of first use
+	uv run python -m tutor.asr
 
 clean:  ## Remove caches and the local session database
 	rm -rf .pytest_cache .mypy_cache .ruff_cache .chainlit

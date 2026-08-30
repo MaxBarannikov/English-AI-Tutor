@@ -29,6 +29,15 @@ class Settings(BaseSettings):
     checkpoint_db: Path = Path("sessions.db")
     default_level: CEFRLevel = "B1"
 
+    # Voice input. Runs locally via faster-whisper — the model is downloaded on
+    # first use. `asr_sample_rate` must match [features.audio] in
+    # .chainlit/config.toml, and 16 kHz is what Whisper expects natively.
+    asr_model: str = "small"
+    asr_device: str = "auto"
+    asr_compute_type: str = "int8"
+    asr_language: str = "en"
+    asr_sample_rate: int = 16_000
+
     # Optional JSON: {"<model id>": {"input": <usd per 1M>, "output": <usd per 1M>}}
     # Prices for providers not shipped in tutor.pricing belong here.
     pricing_file: Path | None = None
